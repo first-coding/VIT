@@ -1,16 +1,38 @@
-# config.py
+from functools import partial
+import torch.nn as nn
 
-IMG_SIZE = 224
-PATCH_SIZE = 16
-IN_C = 3
-NUM_CLASSES = 1000
-EMBED_DIM = 768
-DEPTH = 12
-NUM_HEADS = 12
-MLP_RATIO = 4.0
-QKV_BIAS = True
-QK_SCALE = None
-REPRESENTATION_SIZE = None
-DROP_RATIO = 0.0
-ATTN_DROP_RATIO = 0.0
-DROP_PATH_RATIO = 0.0
+config = {
+    'img_size': 32,
+    'patch_size': 4,
+    'in_c': 3,
+    'num_classes': 10,
+    'embed_dim': 768,
+    'depth': 12,
+    'num_heads': 12,
+    'mlp_ratio': 4.0,
+    'qkv_bias': True,
+    'qk_scale': None,
+    'representation_size': None,
+    'drop_ratio': 0.0,
+    'attn_drop_ratio': 0.0,
+    'drop_path_ratio': 0.0,
+    'embed_layer': None,
+    'norm_layer': partial(nn.LayerNorm, eps=1e-6),
+    'act_layer': nn.GELU,
+    'batch_size': 32,
+    'epochs': 10,
+    'lr': 0.001,
+}
+
+def init_vit_weights(m):
+    if isinstance(m, nn.Linear):
+        nn.init.trunc_normal_(m.weight, std=.01)
+        if m.bias is not None:
+            nn.init.zeros_(m.bias)
+    elif isinstance(m, nn.Conv2d):
+        nn.init.kaiming_normal_(m.weight, mode="fan_out")
+        if m.bias is not None:
+            nn.init.zeros_(m.bias)
+    elif isinstance(m, nn.LayerNorm):
+        nn.init.zeros_(m.bias)
+        nn.init.ones_(m.weight)
