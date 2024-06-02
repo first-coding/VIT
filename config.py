@@ -21,7 +21,7 @@ config = {
     'act_layer': nn.GELU,
     'batch_size': 32,
     'epochs': 10,
-    'lr': 0.001,
+    'lr': 0.05,
 }
 
 def init_vit_weights(m):

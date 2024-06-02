@@ -12,16 +12,23 @@ from models.Models import VisionTransformer
 def train_and_evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    transform = transforms.Compose([
-        transforms.Resize((config['img_size'], config['img_size'])),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
+    transform_train = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),  # 随机裁剪图像，增加数据多样性
+        transforms.RandomHorizontalFlip(),  # 随机水平翻转，增加数据多样性
+        transforms.ToTensor(),  # 将图像转换为张量
+        # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # 将像素值归一化到[-1, 1]范围
     ])
 
-    train_dataset = datasets.CIFAR10(root='/data', train=True, download=False, transform=transform)
+    transform_test = transforms.Compose([
+        transforms.Resize((config['img_size'], config['img_size'])),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
+
+    train_dataset = datasets.CIFAR10(root='/data', train=True, download=False, transform=transform_train)
     train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=4)
 
-    test_dataset = datasets.CIFAR10(root='/data', train=False, download=False, transform=transform)
+    test_dataset = datasets.CIFAR10(root='/data', train=False, download=False, transform=transform_test)
     test_loader = DataLoader(test_dataset, batch_size=config['batch_size'], shuffle=False, num_workers=4)
 
     model = VisionTransformer().to(device)
