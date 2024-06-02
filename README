@@ -1,8 +1,8 @@
 # Vision Transformer (ViT) for CIFAR-10 Dataset
 
 <div align="center">
-  <button onclick="toggleChinese()">中文版本</button>
-  <button onclick="toggleEnglish()">English Version</button>
+  <a href="#" onclick="toggleChinese()">中文版本</a> |
+  <a href="#" onclick="toggleEnglish()">English Version</a>
 </div>
 
 <div id="chinese" style="display:block;">
