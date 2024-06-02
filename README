@@ -1,61 +1,19 @@
-# Vision Transformer (ViT) for CIFAR-10 Dataset
-
-<div align="center">
-  <a href="#" onclick="toggleChinese()">中文版本</a> |
-  <a href="#" onclick="toggleEnglish()">English Version</a>
-</div>
-
-<div id="chinese" style="display:block;">
-
-## 概述
-该项目利用CIFAR-10数据集实现了Vision Transformer (ViT)模型。Vision Transformer是用于图像分类任务的最新架构，利用了自注意力机制的强大能力。
-
-## 特点
-- 利用深度学习在图像分类中的最新进展。
-- 将Transformer的强大功能整合到计算机视觉任务中。
-- 提供了处理图像数据的强大且高效的解决方案。
-
-## 关键组件
-- **Patch Embedding：** 提取图像补丁并将其转换为标记嵌入。
-- **注意力机制：** 捕获标记之间的全局依赖性和关系。
-- **MLP层：** 用于非线性转换的多层感知器。
-- **Transformer块：** 包括注意力层，后跟前馈神经网络。
-- **Vision Transformer (ViT)模型：** 将这些组件组合成一个完整的架构。
-
-## 贡献
-欢迎贡献！请随意fork仓库并提交改进或错误修复的拉取请求。
-
-</div>
-
-<div id="english" style="display:none;">
-
-## Overview
+Vision Transformer (ViT) for CIFAR-10 Dataset
+Overview
 This project implements the Vision Transformer (ViT) model using the CIFAR-10 dataset. The Vision Transformer is a state-of-the-art architecture for image classification tasks, leveraging the power of self-attention mechanisms.
 
-## Features
-- Utilizes the latest advancements in deep learning for image classification.
-- Integrates the powerful capabilities of transformers into computer vision tasks.
-- Provides a robust and efficient solution for handling image data.
+Features
+Utilizes the latest advancements in deep learning for image classification.
+Integrates the powerful capabilities of transformers into computer vision tasks.
+Provides a robust and efficient solution for handling image data.
 
-## Key Components
-- **Patch Embedding:** Extracts image patches and converts them into token embeddings.
-- **Attention Mechanism:** Captures global dependencies and relationships between tokens.
-- **MLP Layers:** Employs multi-layer perceptrons for non-linear transformations.
-- **Transformer Blocks:** Comprises attention layers followed by feed-forward neural networks.
-- **Vision Transformer (ViT) Model:** Combines these components into a cohesive architecture.
+Key Components
+Patch Embedding: Extracts image patches and converts them into token embeddings.
+Attention Mechanism: Captures global dependencies and relationships between tokens.
+MLP Layers: Employs multi-layer perceptrons for non-linear transformations.
+Transformer Blocks: Comprises attention layers followed by feed-forward neural networks.
+Vision Transformer (ViT) Model: Combines these components into a cohesive architecture.
 
-## Contributing
+Contributing
 Contributions are welcome! Feel free to fork the repository and submit pull requests for improvements or bug fixes.
 
-</div>
-
-<script>
-function toggleChinese() {
-  document.getElementById("chinese").style.display = "block";
-  document.getElementById("english").style.display = "none";
-}
-function toggleEnglish() {
-  document.getElementById("chinese").style.display = "none";
-  document.getElementById("english").style.display = "block";
-}
-</script>
