@@ -9,14 +9,42 @@ import matplotlib.pyplot as plt
 from config import config
 from models.Models import VisionTransformer
 
-def train_and_evaluate():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def get_device():
+    if torch.cuda.is_available():
+        gpu_count = torch.cuda.device_count()
+        print(f'Available GPUs: {gpu_count}')
+        for i in range(gpu_count):
+            print(f'GPU {i}: {torch.cuda.get_device_name(i)}')
+        selected_gpu_index = 0
+        device = torch.device(f'cuda:{selected_gpu_index}')
+        device_name = torch.cuda.get_device_name(selected_gpu_index)
+    else:
+        device = torch.device('cpu')
+        device_name = 'CPU'
+    return device, device_name
+def mixup_data(x, y, alpha=1.0):
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1
+    batch_size = x.size()[0]
+    index = torch.randperm(batch_size).to(x.device)
+    mixed_x = lam * x + (1 - lam) * x[index, :]
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam
 
+def mixup_criterion(criterion, pred, y_a, y_b, lam):
+    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
+def train_and_evaluate(device, device_name):
     transform_train = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),  # 随机裁剪图像，增加数据多样性
-        transforms.RandomHorizontalFlip(),  # 随机水平翻转，增加数据多样性
-        transforms.ToTensor(),  # 将图像转换为张量
-        # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # 将像素值归一化到[-1, 1]范围
+        transforms.RandomCrop(config['img_size'], padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.02),
+        transforms.RandomRotation(degrees=30),
+        transforms.RandomGrayscale(p=0.1),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
     transform_test = transforms.Compose([
@@ -25,79 +53,108 @@ def train_and_evaluate():
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
-    train_dataset = datasets.CIFAR10(root='/data', train=True, download=False, transform=transform_train)
+    train_dataset = datasets.CIFAR10(root='./AI_DataAnalysis/Vision Transformer/data', train=True, download=False, transform=transform_train)
     train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=4)
 
-    test_dataset = datasets.CIFAR10(root='/data', train=False, download=False, transform=transform_test)
+    test_dataset = datasets.CIFAR10(root='./AI_DataAnalysis/Vision Transformer/data', train=False, download=False, transform=transform_test)
     test_loader = DataLoader(test_dataset, batch_size=config['batch_size'], shuffle=False, num_workers=4)
 
     model = VisionTransformer().to(device)
 
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=config['lr'])
+    criterion = nn.CrossEntropyLoss(label_smoothing=config['label_smoothing'])
+    optimizer = config['optimizer'](model.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
+    scheduler = config['scheduler'](optimizer, T_max=config['epochs'])
 
     train_losses = []
     test_accuracies = []
 
-    for epoch in range(config['epochs']):
-        # Training
-        model.train()
-        train_loss = 0
-        for images, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{config['epochs']} - Training"):
-            images, labels = images.to(device), labels.to(device)
+    total_epochs = 300
+    cycle_length = 30
 
-            optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
+    for cycle in range(10):
+        print(f'Starting cycle {cycle + 1}/10')
+        for epoch in range(cycle_length):
+            actual_epoch = cycle * cycle_length + epoch + 1
+            model.train()
+            train_loss = 0
+            correct = 0
+            total = 0
 
-            train_loss += loss.item()
+            with tqdm(total=len(train_loader), desc=f"Cycle {cycle + 1}/10 - Epoch {epoch + 1}/30 - Training", leave=False) as pbar:
+                for images, labels in train_loader:
+                    images, labels = images.to(device), labels.to(device)
+                    optimizer.zero_grad()
+                    outputs = model(images)
+                    loss = criterion(outputs, labels)
+                    loss.backward()
+                    optimizer.step()
+                    train_loss += loss.item()
 
-        avg_train_loss = train_loss / len(train_loader)
-        train_losses.append(avg_train_loss)
-        print(f'Epoch [{epoch+1}/{config["epochs"]}], Train Loss: {avg_train_loss:.4f}')
+                    _, predicted = outputs.max(1)
+                    total += labels.size(0)
+                    correct += predicted.eq(labels).sum().item()
 
-        # Evaluation
-        model.eval()
-        correct = 0
-        total = 0
-        with torch.no_grad():
-            for images, labels in tqdm(test_loader, desc=f"Epoch {epoch+1}/{config['epochs']} - Evaluating"):
-                images, labels = images.to(device), labels.to(device)
-                outputs = model(images)
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
+                    pbar.set_postfix(loss=loss.item(), accuracy=100. * correct / total)
+                    pbar.update(1)
 
-        accuracy = 100 * correct / total
-        test_accuracies.append(accuracy)
-        print(f'Epoch [{epoch+1}/{config["epochs"]}], Test Accuracy: {accuracy:.2f}%')
+            avg_train_loss = train_loss / len(train_loader)
+            train_losses.append(avg_train_loss)
+            print(f'Epoch [{actual_epoch}/{total_epochs}], Train Loss: {avg_train_loss:.4f}, Train Accuracy: {100. * correct / total:.2f}%')
 
-    # Save the final model
-    torch.save(model.state_dict(), 'vit_model.pth')
+            model.eval()
+            correct = 0
+            total = 0
+            with torch.no_grad():
+                with tqdm(total=len(test_loader), desc=f"Cycle {cycle + 1}/10 - Epoch {epoch + 1}/30 - Evaluating", leave=False) as pbar:
+                    for images, labels in test_loader:
+                        images, labels = images.to(device), labels.to(device)
+                        outputs = model(images)
+                        _, predicted = torch.max(outputs.data, 1)
+                        total += labels.size(0)
+                        correct += (predicted == labels).sum().item()
+                        pbar.update(1)
+            accuracy = 100 * correct / total
+            test_accuracies.append(accuracy)
+            print(f'Epoch [{actual_epoch}/{total_epochs}], Test Accuracy: {accuracy:.2f}%')
 
-    # Plotting
-    epochs = range(1, config['epochs'] + 1)
-    plt.figure(figsize=(12, 4))
+            scheduler.step()
 
-    plt.subplot(1, 2, 1)    
-    plt.plot(epochs, train_losses, 'b', label='Training loss')
-    plt.title('Training Loss')
+        torch.save(model.state_dict(), f'vit_model_cycle_{cycle + 1}.pth')
+        print(f'Model saved after cycle {cycle + 1}/10')
+
+    torch.save(model.state_dict(), 'vit_model_final.pth')
+
+    epochs = range(1, total_epochs + 1)
+    plt.figure(figsize=(14, 6))
+
+    plt.subplot(1, 3, 1)
+    plt.plot(epochs, train_losses, 'r', label='Training loss')
+    plt.plot(epochs, test_accuracies, 'b', label='Test Accuracy')
+    plt.title('Training Loss and Test Accuracy')
     plt.xlabel('Epochs')
-    plt.ylabel('Loss')
+    plt.ylabel('Loss/Accuracy')
     plt.legend()
 
-    plt.subplot(1, 2, 2)
-    plt.plot(epochs, test_accuracies, 'b', label='Test Accuracy')
-    plt.title('Test Accuracy')
+    plt.subplot(1, 3, 2)
+    lr_values = [round(scheduler.get_last_lr()[0], 4) for _ in range(total_epochs)]
+    plt.plot(epochs, lr_values, 'g', label='Learning Rate')
+    plt.title('Learning Rate Schedule')
     plt.xlabel('Epochs')
-    plt.ylabel('Accuracy (%)')
+    plt.ylabel('Learning Rate')
+    plt.legend()
+
+    plt.subplot(1, 3, 3)
+    plt.plot(epochs, test_accuracies, 'b', label='Test Accuracy')
+    plt.title('Test Accuracy Over Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
     plt.legend()
 
     plt.tight_layout()
-    plt.savefig('training_evaluation_metrics.png')
+    plt.savefig('training_metrics.png')
     plt.show()
 
 if __name__ == "__main__":
-    train_and_evaluate()
+    device, device_name = get_device()
+    print(f'Using device: {device_name}')
+    train_and_evaluate(device, device_name)

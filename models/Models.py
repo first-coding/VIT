@@ -39,7 +39,7 @@ class PatchEmbed(nn.Module):
         return x
 
 class Attention(nn.Module):
-    def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop_ratio=0., proj_drop_ratio=0.):
+    def __init__(self, dim, num_heads=config['num_heads'], qkv_bias=False, qk_scale=None, attn_drop_ratio=config['attn_drop_ratio'], proj_drop_ratio=0.):
         super(Attention, self).__init__()
         self.num_heads = num_heads
         head_dim = dim // num_heads
@@ -81,7 +81,7 @@ class Mlp(nn.Module):
         return x
 
 class Block(nn.Module):
-    def __init__(self, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_ratio=0., attn_drop_ratio=0., drop_path_ratio=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
+    def __init__(self, dim, num_heads, mlp_ratio=config['mlp_ratio'], qkv_bias=False, qk_scale=None,drop_ratio=0.2, attn_drop_ratio=0.2, drop_path_ratio=0.2,act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super(Block, self).__init__()
         self.norm1 = norm_layer(dim)
         self.attn = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop_ratio=attn_drop_ratio, proj_drop_ratio=drop_ratio)
