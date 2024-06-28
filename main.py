@@ -1,11 +1,10 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-
+import numpy as np
 from config import config
 from models.Models import VisionTransformer
 
@@ -22,6 +21,7 @@ def get_device():
         device = torch.device('cpu')
         device_name = 'CPU'
     return device, device_name
+
 def mixup_data(x, y, alpha=1.0):
     if alpha > 0:
         lam = np.random.beta(alpha, alpha)
@@ -43,6 +43,8 @@ def train_and_evaluate(device, device_name):
         transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.02),
         transforms.RandomRotation(degrees=30),
         transforms.RandomGrayscale(p=0.1),
+        transforms.RandomVerticalFlip(),  # 新增：随机垂直翻转
+        transforms.RandomResizedCrop(size=config['img_size']),  # 新增：随机裁剪
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
@@ -68,24 +70,32 @@ def train_and_evaluate(device, device_name):
     train_losses = []
     test_accuracies = []
 
-    total_epochs = 300
-    cycle_length = 30
+    total_epochs = config['epochs']
+    cycle_length = 5
 
-    for cycle in range(10):
-        print(f'Starting cycle {cycle + 1}/10')
-        for epoch in range(cycle_length):
+    alpha_values = [0.5, 1.0, 1.5]  # 新增：尝试不同的 alpha 值
+
+    for cycle in range(cycle_length):
+        print(f'Starting cycle {cycle + 1}/{cycle_length}')
+        for epoch in range(total_epochs):
             actual_epoch = cycle * cycle_length + epoch + 1
             model.train()
             train_loss = 0
             correct = 0
             total = 0
 
-            with tqdm(total=len(train_loader), desc=f"Cycle {cycle + 1}/10 - Epoch {epoch + 1}/30 - Training", leave=False) as pbar:
+            # 新增：随机选择 alpha 值
+            alpha = np.random.choice(alpha_values)
+            with tqdm(total=len(train_loader), desc=f"Cycle {cycle + 1}/{cycle_length} - Epoch {epoch + 1}/{total_epochs} - Training", leave=False) as pbar:
                 for images, labels in train_loader:
                     images, labels = images.to(device), labels.to(device)
+
+                    # MixUp data augmentation
+                    images, labels_a, labels_b, lam = mixup_data(images, labels, alpha=alpha)
+
                     optimizer.zero_grad()
                     outputs = model(images)
-                    loss = criterion(outputs, labels)
+                    loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
                     loss.backward()
                     optimizer.step()
                     train_loss += loss.item()
@@ -123,7 +133,6 @@ def train_and_evaluate(device, device_name):
         print(f'Model saved after cycle {cycle + 1}/10')
 
     torch.save(model.state_dict(), 'vit_model_final.pth')
-
     epochs = range(1, total_epochs + 1)
     plt.figure(figsize=(14, 6))
 

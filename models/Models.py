@@ -39,7 +39,7 @@ class PatchEmbed(nn.Module):
         return x
 
 class Attention(nn.Module):
-    def __init__(self, dim, num_heads=config['num_heads'], qkv_bias=False, qk_scale=None, attn_drop_ratio=config['attn_drop_ratio'], proj_drop_ratio=0.):
+    def __init__(self, dim, num_heads=config['num_heads'], qkv_bias=config['qkv_bias'], qk_scale=config['qk_scale'], attn_drop_ratio=config['attn_drop_ratio'], proj_drop_ratio=config['Attention_proj_drop_ratio']):
         super(Attention, self).__init__()
         self.num_heads = num_heads
         head_dim = dim // num_heads
@@ -63,7 +63,7 @@ class Attention(nn.Module):
         return x
 
 class Mlp(nn.Module):
-    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
+    def __init__(self, in_features, hidden_features=config['MLP_hidden_features'], out_features=config['MLP_out_features'], act_layer=config['act_layer'], drop=config['MLP_drop']):
         super(Mlp, self).__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
@@ -81,7 +81,7 @@ class Mlp(nn.Module):
         return x
 
 class Block(nn.Module):
-    def __init__(self, dim, num_heads, mlp_ratio=config['mlp_ratio'], qkv_bias=False, qk_scale=None,drop_ratio=0.2, attn_drop_ratio=0.2, drop_path_ratio=0.2,act_layer=nn.GELU, norm_layer=nn.LayerNorm):
+    def __init__(self, dim, num_heads, mlp_ratio=config['mlp_ratio'], qkv_bias=False, qk_scale=None,drop_ratio=config['drop_ratio'], attn_drop_ratio=config['attn_drop_ratio'], drop_path_ratio=config['drop_path_ratio'],act_layer=config['act_layer'], norm_layer=nn.LayerNorm):
         super(Block, self).__init__()
         self.norm1 = norm_layer(dim)
         self.attn = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop_ratio=attn_drop_ratio, proj_drop_ratio=drop_ratio)
@@ -101,7 +101,7 @@ class VisionTransformer(nn.Module):
                  num_heads=config['num_heads'], mlp_ratio=config['mlp_ratio'], qkv_bias=config['qkv_bias'], 
                  qk_scale=config['qk_scale'], representation_size=config['representation_size'], drop_ratio=config['drop_ratio'], 
                  attn_drop_ratio=config['attn_drop_ratio'], drop_path_ratio=config['drop_path_ratio'], 
-                 embed_layer=PatchEmbed, norm_layer=None, act_layer=None):
+                 embed_layer=PatchEmbed, norm_layer=config['norm_layer'], act_layer=config['act_layer']):
         super(VisionTransformer, self).__init__()
         self.num_classes = num_classes
         self.num_features = self.embed_dim = embed_dim
