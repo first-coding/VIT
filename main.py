@@ -40,9 +40,8 @@ def train_and_evaluate(device, device_name):
     transform_train = transforms.Compose([
         transforms.RandomCrop(config['img_size'], padding=4),
         transforms.RandomHorizontalFlip(),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.02),
-        transforms.RandomRotation(degrees=30),
-        transforms.RandomGrayscale(p=0.1),
+        transforms.ColorJitter(brightness=(0.8,1.2), contrast=0.0, saturation=0.0, hue=0.01),
+        transforms.RandomGrayscale(p=0.2),
         transforms.RandomVerticalFlip(),  # 新增：随机垂直翻转
         transforms.RandomResizedCrop(size=config['img_size']),  # 新增：随机裁剪
         transforms.ToTensor(),
@@ -51,15 +50,16 @@ def train_and_evaluate(device, device_name):
 
     transform_test = transforms.Compose([
         transforms.Resize((config['img_size'], config['img_size'])),
+        transforms.ColorJitter(brightness=(0.8,1.2), contrast=0.0, saturation=0.0, hue=0.01),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
     train_dataset = datasets.CIFAR10(root='./AI_DataAnalysis/Vision Transformer/data', train=True, download=False, transform=transform_train)
-    train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=8)
 
     test_dataset = datasets.CIFAR10(root='./AI_DataAnalysis/Vision Transformer/data', train=False, download=False, transform=transform_test)
-    test_loader = DataLoader(test_dataset, batch_size=config['batch_size'], shuffle=False, num_workers=4)
+    test_loader = DataLoader(test_dataset, batch_size=config['batch_size'], shuffle=False, num_workers=8)
 
     model = VisionTransformer().to(device)
 
@@ -71,9 +71,11 @@ def train_and_evaluate(device, device_name):
     test_accuracies = []
 
     total_epochs = config['epochs']
-    cycle_length = 5
+    cycle_length = 10
 
     alpha_values = [0.5, 1.0, 1.5]  # 新增：尝试不同的 alpha 值
+
+    scaler = torch.cuda.amp.GradScaler()  # 使用混合精度训练
 
     for cycle in range(cycle_length):
         print(f'Starting cycle {cycle + 1}/{cycle_length}')
@@ -94,10 +96,14 @@ def train_and_evaluate(device, device_name):
                     images, labels_a, labels_b, lam = mixup_data(images, labels, alpha=alpha)
 
                     optimizer.zero_grad()
-                    outputs = model(images)
-                    loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
-                    loss.backward()
-                    optimizer.step()
+                    with torch.cuda.amp.autocast():
+                        outputs = model(images)
+                        loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
+
+                    scaler.scale(loss).backward()
+                    scaler.step(optimizer)
+                    scaler.update()
+
                     train_loss += loss.item()
 
                     _, predicted = outputs.max(1)
@@ -115,7 +121,7 @@ def train_and_evaluate(device, device_name):
             correct = 0
             total = 0
             with torch.no_grad():
-                with tqdm(total=len(test_loader), desc=f"Cycle {cycle + 1}/10 - Epoch {epoch + 1}/30 - Evaluating", leave=False) as pbar:
+                with tqdm(total=len(test_loader), desc=f"Cycle {cycle + 1}/{cycle_length} - Epoch {epoch + 1}/{total_epochs} - Evaluating", leave=False) as pbar:
                     for images, labels in test_loader:
                         images, labels = images.to(device), labels.to(device)
                         outputs = model(images)
