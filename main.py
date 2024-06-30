@@ -42,8 +42,8 @@ def train_and_evaluate(device, device_name):
         transforms.RandomHorizontalFlip(),
         transforms.ColorJitter(brightness=(0.8,1.2), contrast=0.0, saturation=0.0, hue=0.01),
         transforms.RandomGrayscale(p=0.2),
-        transforms.RandomVerticalFlip(),  # 新增：随机垂直翻转
-        transforms.RandomResizedCrop(size=config['img_size']),  # 新增：随机裁剪
+        transforms.RandomVerticalFlip(),  
+        transforms.RandomResizedCrop(size=config['img_size']),  
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
@@ -73,8 +73,7 @@ def train_and_evaluate(device, device_name):
     total_epochs = config['epochs']
     cycle_length = 10
 
-    alpha_values = [0.5, 1.0, 1.5]  # 新增：尝试不同的 alpha 值
-
+    alpha_values = [0.5, 1.0, 1.5, 2.0, 2.5]  
     scaler = torch.cuda.amp.GradScaler()  # 使用混合精度训练
 
     for cycle in range(cycle_length):
@@ -86,7 +85,6 @@ def train_and_evaluate(device, device_name):
             correct = 0
             total = 0
 
-            # 新增：随机选择 alpha 值
             alpha = np.random.choice(alpha_values)
             with tqdm(total=len(train_loader), desc=f"Cycle {cycle + 1}/{cycle_length} - Epoch {epoch + 1}/{total_epochs} - Training", leave=False) as pbar:
                 for images, labels in train_loader:

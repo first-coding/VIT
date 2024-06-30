@@ -7,19 +7,19 @@ config = {
     'patch_size': 6,                 # 图像分块的大小
     'in_c': 3,                       # 输入通道数 (RGB 图像)
     'num_classes': 10,               # 类别数量 (CIFAR-10 是 10 类)
-    'embed_dim':512,                 # 每个图像块的嵌入维度
+    'embed_dim':384,                 # 每个图像块的嵌入维度
     'depth': 10,                      # Transformer 中编码器层数
     'num_heads': 8,                  # 多头自注意力机制的头数
     'mlp_ratio': 4.0,                # MLP 层的宽度和嵌入维度的比值
     'qkv_bias': True,                # 是否使用偏置
     'qk_scale': None,                # Query 和 Key 的缩放因子
-    'representation_size': 256,      # 输出表示的尺寸
+    'representation_size': 128,      # 输出表示的尺寸
     'drop_ratio': 0.1,               # Dropout 比例
     'attn_drop_ratio': 0.,          # 自注意力机制的 Dropout 比例
     'drop_path_ratio': 0.1,          # DropPath（随机深度）的丢弃比例
     'embed_layer': None,             # 嵌入层，使用默认
-    'Attention_proj_drop_ratio':0.,
-    'MLP_drop':0.,
+    'Attention_proj_drop_ratio':0.1,
+    'MLP_drop':0.1,
     'MLP_hidden_features':None,      #隐藏层特征维度，在models embded_dim * mlp_ratio
     'MLP_out_features':None,         #输出层特征维度，None即自适应
     'norm_layer': partial(nn.LayerNorm, eps=1e-6),  # 归一化层
@@ -28,14 +28,14 @@ config = {
     'epochs': 20,                    # 训练周期数
     'optimizer': optim.AdamW,  # 使用 AdamW 优化器
     'scheduler': optim.lr_scheduler.CosineAnnealingLR, 
-    'lr':0.001 ,                    # 学习率
+    'lr':0.0001 ,                    # 学习率
     'weight_decay': 1e-4,            # 权重衰减，用于 L2 正则化
     'label_smoothing': 0.1,          # 标签平滑系数
     'use_fp16': True,                # 启用混合精度训练
 }
 
 
-
+#模型权重初始化
 def init_vit_weights(m):
     if isinstance(m, nn.Linear):
         nn.init.trunc_normal_(m.weight, std=0.02)
