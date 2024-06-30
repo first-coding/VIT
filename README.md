@@ -21,4 +21,4 @@ Vision Transformer (ViT) Model: Combines these components into a cohesive archit
 ## Contributing
 Contributions are welcome! Feel free to fork the repository and submit pull requests for improvements or bug fixes.
 
-The final accuracy of the test set was 74% by training
+The final accuracy of the test set was 74% by training，Of course, there would have been better hyperparameter selection and a better way to define the model that would have made VIT perform better on the CIFAR-10 dataset, but I stopped at this level of accuracy because of the resources and time. If you have a higher level of accuracy, I hope you can give me a lot of advice, thank you.
