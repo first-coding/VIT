@@ -1,4 +1,8 @@
 # Vision Transformer (ViT) for CIFAR-10 Dataset
+Links to related papers are https://arxiv.org/abs/2010.11929
+## Dataset
+The data can be downloaded from the official website or in the image place, or the Download setting to True when the code loads the data
+
 ## Overview
 This project implements the Vision Transformer (ViT) model using the CIFAR-10 dataset. The Vision Transformer is a state-of-the-art architecture for image classification tasks, leveraging the power of self-attention mechanisms.
 
