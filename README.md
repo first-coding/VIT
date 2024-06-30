@@ -21,3 +21,4 @@ Vision Transformer (ViT) Model: Combines these components into a cohesive archit
 ## Contributing
 Contributions are welcome! Feel free to fork the repository and submit pull requests for improvements or bug fixes.
 
+The final accuracy of the test set was 74% by training
