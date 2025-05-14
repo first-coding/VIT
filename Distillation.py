@@ -12,27 +12,38 @@ from models.Models import VisionTransformer  # 确保路径正确
 # ====== 学生模型定义 ======
 class StudentCNN(nn.Module):
     def __init__(self, num_classes=10):
-        super().__init__()
-        # 增加卷积层，并增大输出通道数
+        super(StudentCNN, self).__init__()
         self.features = nn.Sequential(
-            nn.Conv2d(3, 64, 3, padding=1),  # 第一层
-            nn.ReLU(),
-            nn.Conv2d(64, 128, 3, padding=1),  # 第二层，增加通道数
-            nn.ReLU(),
-            nn.Conv2d(128, 256, 3, padding=1),  # 第三层，进一步增加通道数
-            nn.ReLU(),
-            nn.AdaptiveAvgPool2d((1, 1))  # 自适应池化层
+            self._make_block(3, 64),    # ConvBlock1
+            self._make_block(64, 128),  # ConvBlock2
+            self._make_block(128, 256), # ConvBlock3
+            nn.AdaptiveAvgPool2d((1, 1))  # 全局池化
         )
-        # 增加全连接层的节点数
-        self.classifier = nn.Linear(256, num_classes)
-    
+        self.classifier = nn.Sequential(
+            nn.Linear(256, 512),  # 隐藏层
+            nn.ReLU(),
+            nn.Linear(512, num_classes)
+        )
+
+    def _make_block(self, in_channels, out_channels):
+        # 一个卷积块，包含两个卷积层 + BatchNorm + ReLU
+        return nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
+        )
+
     def forward(self, x):
         x = self.features(x)
         x = x.view(x.size(0), -1)  # 展平
-        return self.classifier(x)
+        x = self.classifier(x)
+        return x
 
 # ====== 蒸馏损失函数（输出层）======
-def kd_loss(student_logits, teacher_logits, T=4.0, alpha=0.5):
+def kd_loss(student_logits, teacher_logits, T=6.0, alpha=0.6):
     ce_loss = F.cross_entropy(student_logits, teacher_logits.argmax(dim=1))
     kl_loss = F.kl_div(
         F.log_softmax(student_logits / T, dim=1),
@@ -82,8 +93,8 @@ def main():
     optimizer = optim.Adam(student.parameters(), lr=3e-4)
 
     epochs = 20
-    T = 4.0
-    alpha = 0.5
+    T = 6.0
+    alpha = 0.6
 
     for epoch in range(epochs):
         student.train()
