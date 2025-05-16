@@ -1,0 +1,10 @@
+fastapi==0.115.8
+matplotlib==3.9.4
+numpy==1.26.4
+onnx==1.18.0
+onnxruntime_gpu==1.19.2
+Pillow==10.4.0
+torch==2.6.0+cu126
+torchvision==0.21.0
+tqdm==4.67.1
+uvicorn==0.34.0

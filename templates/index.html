@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ONNX 推理接口</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>上传图片进行分类</h2>
+        <form id="upload-form" enctype="multipart/form-data" class="upload-form">
+            <input type="file" name="file" accept="image/*" required />
+            <button type="submit" class="submit-btn">上传并预测</button>
+        </form>
+        <div id="result" class="result"></div>
+    </div>
+
+<script>
+document.getElementById("upload-form").onsubmit = async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const response = await fetch("/predict", { method: "POST", body: formData });
+    const data = await response.json();
+
+    // 获取预测结果和类别名称
+    const prediction = data.prediction;
+    const resultElement = document.getElementById("result");
+
+    // 显示预测结果（类别名称）
+    resultElement.innerHTML = `
+        <p><strong>预测结果：</strong>${prediction}</p>
+    `;
+    
+    // 显示结果框
+    resultElement.classList.add("show");
+};
+</script>
+</body>
+</html>
