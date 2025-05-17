@@ -20,7 +20,7 @@ class_names = [
 
 app = FastAPI()
 
-# Allow frontend requests
+# 允许前端跨域请求
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -29,21 +29,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Static and template setup
+# 静态文件和模板设置
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Model Setup
+# ONNX 推理配置（CPU-only）
 so = ort.SessionOptions()
 so.intra_op_num_threads = 4
 so.inter_op_num_threads = 2
 so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-providers = ["CUDAExecutionProvider"] if ort.get_device() == "GPU" else ["CPUExecutionProvider"]
+providers = ["CPUExecutionProvider"]  # 强制使用 CPU
+
+# 加载 ONNX 模型
 session = ort.InferenceSession("Output/Onnx/student_cnn_int8.onnx", sess_options=so, providers=providers)
 input_name = session.get_inputs()[0].name
 output_name = session.get_outputs()[0].name
 
-# Transform definition
+# 图像预处理
 transform = transforms.Compose([
     transforms.Resize((32, 32)),
     transforms.ToTensor(),
@@ -53,12 +55,12 @@ def preprocess_image(image: Image.Image):
     image = transform(image).unsqueeze(0)
     return image.numpy().astype(np.float32)
 
-# Home route: upload page
+# 首页
 @app.get("/")
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# Prediction route
+# 预测接口
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     try:
@@ -66,18 +68,13 @@ async def predict(file: UploadFile = File(...)):
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         input_tensor = preprocess_image(image)
 
-        # Run inference
         outputs = session.run([output_name], {input_name: input_tensor})[0]
-        pred_class = int(np.argmax(outputs))  # 获取预测的类别索引
-        pred_label = class_names[pred_class]  # 获取类别名称
+        pred_class = int(np.argmax(outputs))
+        pred_label = class_names[pred_class]
 
-        # Return only class label in response
         return JSONResponse({
             "filename": file.filename,
-            "prediction": pred_label  # 返回的是类别名称
+            "prediction": pred_label
         })
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
-
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
