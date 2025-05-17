@@ -38,7 +38,7 @@ python main.py
 ```
 
 ## Train
-Modify hyperparameters in Config/config/ as needed.\
+Modify hyperparameters in Config/config/ as needed.
 - Train the teacher ViT model:
 ``` bash
 python teacher_model_train.py
