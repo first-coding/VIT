@@ -91,4 +91,4 @@ See Distillation&optimize.py for implementation.
 ## Performance & Contributing
 Due to time and resource limitations, the ViT teacher model achieved 74% accuracy on the CIFAR-10 test set, while the distilled CNN student model reached 64%. Inference was further optimized using ONNX Runtime with INT8 quantization for faster and more efficient deployment.
 
-If you manage to improve the model architecture, training strategy, or deployment pipeline, feel free to open a pull request or start a discussion — contributions and suggestions are always welcome!
+I sincerely welcome any suggestions that could improve the model’s performance. Feel free to open a pull request or raise an issue — thank you for your support and collaboration!
