@@ -47,7 +47,7 @@ python teacher_model_train.py
 ```bash
 python teacher_model_test.py
 ```
-Perform knowledge distillation + optimize
+- Perform knowledge distillation + optimize
 ```bash
 python Distillation&optimize.py
 ```
